@@ -37,24 +37,35 @@ class ProductViewTest(APITestCase):
             "is_active": True
         }
 
+    def setUpCreateLoginAuthenticate(self, user):
+        login = {
+            "email": user["email"],
+            "password": user["password"],
+        }
+        user_instance = User.objects.create_user(**user)
+        response = self.client.post("/api/login/", login)
+        self.client.credentials(HTTP_AUTHORIZATION="Token " + response.data["token"])
+
+        return user_instance
+
     def test_only_seller_creates_product(self):
         """Somente vendedor pode criar produtos"""
-        self.client.force_authenticate(User.objects.create_user(**self.seller_data))
+        self.setUpCreateLoginAuthenticate(self.seller_data)
         seller_create_product_response = self.client.post("/api/products/", self.product_data)
         self.assertEqual(seller_create_product_response.status_code, status.HTTP_201_CREATED)
 
-        self.client.force_authenticate(User.objects.create_user(**self.user_default_data))
+        self.setUpCreateLoginAuthenticate(self.user_default_data)
         user_default_create_response = self.client.post("/api/products/", self.product_data)
         self.assertEqual(user_default_create_response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_only_seller_updates_product(self):
         """Somente o vendedor associado ao produto pode atualizá-lo."""
-        self.client.force_authenticate(User.objects.create_user(**self.seller_data))
+        self.setUpCreateLoginAuthenticate(self.seller_data)
         product_response = self.client.post("/api/products/", self.product_data)
         seller1_update_response = self.client.patch(f"/api/products/{product_response.data['id']}/", self.product_data)
         self.assertEqual(seller1_update_response.status_code, status.HTTP_200_OK)
 
-        self.client.force_authenticate(User.objects.create_user(**self.seller_data2))
+        self.setUpCreateLoginAuthenticate(self.seller_data2)
         seller2_update_response = self.client.patch(f"/api/products/{product_response.data['id']}/", self.product_data)
         self.assertEqual(seller2_update_response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -70,7 +81,7 @@ class ProductViewTest(APITestCase):
 
     def test_wrong_key(self):
         """Verificar se as chaves foram enviadas corretamente"""
-        self.client.force_authenticate(User.objects.create_user(**self.seller_data))
+        self.setUpCreateLoginAuthenticate(self.seller_data)
         self.product_data["pric"] = self.product_data["price"] 
         del self.product_data["price"]
         product_response = self.client.post("/api/products/", self.product_data)
@@ -78,14 +89,14 @@ class ProductViewTest(APITestCase):
 
     def test_create_product_with_negative_quantity(self):
         """Não deve ser possível criar produtos com quantidade negativa."""
-        self.client.force_authenticate(User.objects.create_user(**self.seller_data))
+        self.setUpCreateLoginAuthenticate(self.seller_data)
         self.product_data["quantity"] = -1
         with self.assertRaises(IntegrityError):
             self.client.post("/api/products/", self.product_data)
             
     def test_specific_return_on_creation_and_listing(self):
         """Retorno específico para listagem e criação."""
-        self.client.force_authenticate(User.objects.create_user(**self.seller_data))
+        self.setUpCreateLoginAuthenticate(self.seller_data)
         create_response = self.client.post("/api/products/", self.product_data, format="json")
         
         expected_return_create = {

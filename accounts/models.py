@@ -10,7 +10,7 @@ class User(AbstractUser):
     username = models.CharField(max_length=50, null=True)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name", "is_seller"]
+    REQUIRED_FIELDS = ["first_name", "last_name"]
     objects = CustomUserManager()
 
     def __repr__(self) -> str:
