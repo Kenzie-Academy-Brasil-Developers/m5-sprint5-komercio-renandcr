@@ -88,6 +88,7 @@ class UserViewTest(APITestCase):
         user_default = User.objects.create_user(**self.user_default)
         response_token = self.client.post("/api/login/",self.user_default)
         self.assertEqual(user_default.auth_token.key, response_token.data["token"])
+        
         response_token.data["token"] = "djndcdndc5454cdcd544"
         self.assertNotEqual(user_default.auth_token.key, response_token.data["token"])
 
